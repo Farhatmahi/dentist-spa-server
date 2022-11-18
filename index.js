@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 //port
-const port = process.env.PORT || 5001;
+const port = process.env.PORT || 5002;
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.6ulnnbw.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
@@ -28,19 +28,27 @@ const run = async () => {
 
     //use aggregate to query multiple collection and then merge data
     app.get("/appointmentOptions", async (req, res) => {
-      const date = req.query.date;
+      const date = req.query.date; //got the date from client
       console.log(date);
+      
       const query = {};
       const options = await appointmentOptionsCollection.find(query).toArray();
-      const bookingQuery = { appointmentDate: date };
+
+      //get the bookings of the provided date.
+      const bookingQuery = { appointmentDate: date }; //get the bookings of the provided date.
       const alreadyBooked = await bookingCollection
         .find(bookingQuery)
         .toArray();
-    options.forEach(option => {
-        const optionBooked = alreadyBooked.filter(book => book.treatment === option.name)
-        const bookedSlots = optionBooked.map(book => book.slot)
-        console.log(option.name, bookedSlots)
-    })
+
+      options.forEach((option) => {
+        const optionBooked = alreadyBooked.filter(
+          (book) => book.treatment === option.name
+        );
+        const bookedSlots = optionBooked.map((book) => book.slot);
+        const remainingSlots = option.slots.filter(slot => !bookedSlots.includes(slot))
+        option.slots = remainingSlots
+        console.log(option.name, bookedSlots, remainingSlots.length);
+      });
       res.send(options);
 
       app.post("/booking", async (req, res) => {
