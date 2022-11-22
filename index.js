@@ -47,6 +47,8 @@ const run = async () => {
 
     const bookingCollection = client.db("doctorsPortal").collection("booking");
     const usersCollection = client.db("doctorsPortal").collection("users");
+    const doctorsCollection = client.db("doctorsPortal").collection("doctors");
+
 
     // use aggregate to query multiple collection and then merge data
     app.get("/appointmentOptions", async (req, res) => {
@@ -77,6 +79,15 @@ const run = async () => {
       });
       res.send(options);
     });
+
+
+    app.get('/appointmentSpeciality', async(req, res) => {
+        const query = {}
+        //using the project method, it'll let us only take certain fields
+        const result = await appointmentOptionsCollection.find(query).project({name : 1}).toArray()
+        res.send(result)
+    })
+
 
     app.get("/booking", verifyJWT, async (req, res) => {
       const email = req.query.email;
@@ -148,7 +159,7 @@ const run = async () => {
 
     app.get('/users/admin/:email', verifyJWT, async(req, res) => {
         const email = req.params.email;
-        console.log(email);
+        // console.log(email);
         const query = {email : email}
         const user = await usersCollection.findOne(query)
         res.send({isAdmin : user?.role === 'admin'})
@@ -170,6 +181,25 @@ const run = async () => {
             }
         }
         const result = await usersCollection.updateOne(filter, updatedDoc, option)
+        res.send(result)
+    })
+
+    app.post('/doctors', verifyJWT, async(req, res) => {
+        const doctor = req.body;
+        const result = await doctorsCollection.insertOne(doctor)
+        res.send(result)
+    })
+
+    app.get('/doctors', verifyJWT, async(req, res) => {
+        const query = {}
+        const doctors = await doctorsCollection.find(query).toArray()
+        res.send(doctors)
+    })
+
+    app.delete('/doctors/:id', verifyJWT, async(req, res) => {
+        const id = req.params.id;
+        const filter = {_id : ObjectId(id)}
+        const result = await doctorsCollection.deleteOne(filter)
         res.send(result)
     })
 
